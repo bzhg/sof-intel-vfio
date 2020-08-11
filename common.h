@@ -7,7 +7,7 @@
 #define BITS_PER_LONG 32
 #endif
 
-#define _UL(x) _BITUL(x)
+//#define _UL(x) _BITUL(x)
 
 #define GENMASK(h, l) \
 	(((~_UL(0)) - (_UL(1) << (l)) + 1) & \

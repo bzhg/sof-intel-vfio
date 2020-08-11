@@ -12,7 +12,7 @@
 #include "common.h"
 
 
-
+#include "probe.h"
 
 
 
@@ -36,7 +36,6 @@ int main() {
 	struct vfio_group_status group_status = {.argsz = sizeof(group_status)};
 	
 	struct vfio_iommu_type1_info iommu_info = { .argsz = sizeof(iommu_info) };
-	struct vfio_iommu_type1_dma_map dma_map = { .argsz = sizeof(dma_map) };
 	struct vfio_device_info device_info = { .argsz = sizeof(device_info) };
 
 	/* Create a new container */
@@ -59,7 +58,7 @@ int main() {
 	}
 
 	/* Open the group */
-	info->group = open("/dev/vfio/11", O_RDWR);
+	info->group = open("/dev/vfio/12", O_RDWR);
 	if(info->group < 0){
 		printf("Group didnt open correctly\n");
 	}
@@ -94,20 +93,6 @@ int main() {
 	}
 	printf("flags iommu: %u\n",iommu_info.flags);
 
-	/* Allocate some space and setup a DMA mapping */
-	dma_map.vaddr = (__u64) mmap(0, 1024*1024, PROT_READ | PROT_WRITE,
-			     MAP_PRIVATE | MAP_ANONYMOUS, 0, 0);
-	dma_map.size = 1024*1024;
-	dma_map.iova = 0; /* 1MB starting at 0x0 from device view */
-	dma_map.flags = VFIO_DMA_MAP_FLAG_READ | VFIO_DMA_MAP_FLAG_WRITE;
-
-	ret = ioctl(info->container, VFIO_IOMMU_MAP_DMA, &dma_map);
-	if(ret < 0){
-		printf("IOMMU MAP DMA failed. %d\n", ret);
-	}
-
-	printf("DMA Map info. Size: %llu, flags: %u\n", dma_map.size, dma_map.flags);
-
 	/* Get a file descriptor for the device */
 	info->device = ioctl(info->group, VFIO_GROUP_GET_DEVICE_FD, "0000:00:1f.3");
 	if(info->device < 0){
@@ -139,12 +124,16 @@ int main() {
 
 		}
 
-		
-
 		/* Setup mappings... read/write offsets, mmaps
 		 * For PCI devices, config space is a region */
 	}
 	printf("\n\n");
+
+
+	load_fw_for_dma(info->container, "/lib/firmware/intel/sof/sof-cnl.ri",
+			0xfff40000);
+	return 0;
+
 
     const char * fw_file = "/lib/firmware/intel/sof/sof-cnl.ri";
     struct snd_sof_fw_header * header;
